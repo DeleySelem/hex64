@@ -3,5 +3,9 @@ Encoder that uses I-ching hexagrams. The program uses trigrams as an interphase 
 
 Arguments:
 -f <filename> to encrypt a file.
+
 -d hexed_<filename> to decode hexagram file.
+
+-r run hexed_<filename>
+
 -v verbose output
