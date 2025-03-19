@@ -1,17 +1,18 @@
 import argparse
 import os
 import subprocess
+import sys
 
 # Trigram symbols
 trigram_symbols = {
-    '000': '☰',  # Heaven
-    '001': '☱',  # Wind
-    '010': '☲',  # Fire
-    '011': '☳',  # Lake
-    '100': '☵',  # Water
-    '101': '☶',  # Mountain
-    '110': '☴',  # Thunder
-    '111': '☷',  # Earth
+    '000': '☰',
+    '001': '☱',
+    '010': '☲',
+    '011': '☳',
+    '100': '☵',
+    '101': '☶',
+    '110': '☴',
+    '111': '☷',
 }
 
 # Hexagram symbols for all 64 hexagrams
@@ -69,13 +70,39 @@ def decode_binary(binary_str):
         byte_array.append(int(byte_bits, 2))
     return byte_array.decode('utf-8', errors='ignore')
 
+def display_help():
+    """Display a help screen."""
+    print("""
+☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰[ HEX64 ]☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰
+
+Encoder that turns files into I-Ching hexagrams and runs the encoded files.
+
+By: Deley Selem
+
+Usage: hex64.py [options]
+
+Options:
+  -f, --file        Encode a file to I-Ching hexagrams.
+  -d, --decode      Decode hexagrams back to the original text.
+  -rp, --run-python Run an encoded Python program file as a Python3 program.
+  -rb, --run-bash   Run an encoded Bash program file as a Bash script.
+  -v, --verbose     Print detailed encoding/decoding phases.
+  -h, --help        Display this help screen.
+""")
+
 def main():
-    parser = argparse.ArgumentParser(description='Convert a file to I Ching hexagrams and back.')
+    parser = argparse.ArgumentParser(description='Convert a file to I Ching hexagrams and back.', add_help=False)
     parser.add_argument('-f', '--file', type=str, help='Input file to convert to hexagrams.')
     parser.add_argument('-d', '--decode', type=str, help='Decode hexagrams back to original text.')
-    parser.add_argument('-r', '--run', type=str, help='Run a program using the provided hexed file.')
+    parser.add_argument('-rp', '--run-python', type=str, help='Run an encoded Python program as a Python3 program.')
+    parser.add_argument('-rb', '--run-bash', type=str, help='Run an encoded Bash program as a Bash script.')
     parser.add_argument('-v', '--verbose', action='store_true', help='Print detailed encoding/decoding phases.')
+    parser.add_argument('-h', '--help', action='store_true', help='Display help screen.')
     args = parser.parse_args()
+
+    if args.help:
+        display_help()
+        sys.exit(0)
 
     if args.file:
         with open(args.file, 'r', encoding='utf-8') as f:
@@ -102,9 +129,8 @@ def main():
 
     elif args.decode:
         with open(args.decode, 'r') as f:
-            hex_symbols = f.read().strip()  # Read entire line and strip whitespace
+            hex_symbols = f.read().strip()
 
-        # Create binary string from hex symbols
         binary_str = ''.join(
             next((k for k, v in hexagram_symbols.items() if v == hs), '000000')
             for hs in hex_symbols
@@ -114,52 +140,61 @@ def main():
             print(f'Hexagram Symbols:\n{"".join(hex_symbols)}')
             print(f'Decoded Binary (Raw): {binary_str}')
 
-        trigrams_decoded = [binary_str[i:i + 3] for i in range(0, len(binary_str), 3)]
-        trigram_symbols_decoded = [trigram_symbols.get(t, '?') for t in trigrams_decoded]
-
-        if args.verbose:
-            print(f'Decoded Trigram Symbols: {"".join(trigram_symbols_decoded)}')
-
         text = decode_binary(binary_str)
-
-        if args.verbose:
-            print(f'Decoded Text:\n{text}')
 
         decoded_file = f'decoded_{os.path.basename(args.decode)}'
         with open(decoded_file, 'w', encoding='utf-8') as f:
             f.write(text)
 
-        if args.verbose:
-            print(f'Decoded text saved as {decoded_file}.')
+        print(f'\nDecoded text saved as {decoded_file}.')
 
-    elif args.run:
-        with open(args.run, 'r') as f:
-            hex_symbols = f.read().strip()  # Read entire line and strip whitespace
+        if args.verbose:
+            print(f'\nContents of {decoded_file}:\n')
+            print(text)
+
+    elif args.run_python:
+        with open(args.run_python, 'r') as f:
+            hex_symbols = f.read().strip()
 
         binary_str = ''.join(
             next((k for k, v in hexagram_symbols.items() if v == hs), '000000')
             for hs in hex_symbols
         )
 
-        trigrams_decoded = [binary_str[i:i + 3] for i in range(0, len(binary_str), 3)]
-        trigram_symbols_decoded = [trigram_symbols.get(t, '?') for t in trigrams_decoded]
-
-        if args.verbose:
-            print(f'Decoded Trigram Symbols:\n{"".join(trigram_symbols_decoded)}')
-            print(f'Decoded Binary (Raw):\n{binary_str}')
-
         text = decode_binary(binary_str)
-        decoded_file = f'decoded_{os.path.basename(args.run)}'
+        decoded_file = f'decoded_{os.path.basename(args.run_python)}'
         with open(decoded_file, 'w', encoding='utf-8') as f:
             f.write(text)
 
         if args.verbose:
-            print(f'Decoded text saved as {decoded_file}.')
+            print(f'Decoded Python file saved as {decoded_file}.')
 
         try:
             subprocess.run(['python3', decoded_file], check=True)
         except subprocess.CalledProcessError as e:
-            print(f'Error running script: {e}')
+            print(f"Error running Python3 program: {e}")
+
+    elif args.run_bash:
+        with open(args.run_bash, 'r') as f:
+            hex_symbols = f.read().strip()
+
+        binary_str = ''.join(
+            next((k for k, v in hexagram_symbols.items() if v == hs), '000000')
+            for hs in hex_symbols
+        )
+
+        text = decode_binary(binary_str)
+        decoded_file = f'decoded_{os.path.basename(args.run_bash)}'
+        with open(decoded_file, 'w', encoding='utf-8') as f:
+            f.write(text)
+
+        if args.verbose:
+            print(f'Decoded Bash file saved as {decoded_file}.')
+
+        try:
+            subprocess.run(['bash', decoded_file], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error running Bash script: {e}")
 
 if __name__ == '__main__':
     main()
